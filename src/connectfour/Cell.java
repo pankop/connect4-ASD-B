@@ -12,7 +12,6 @@ package connectfour;
 import java.awt.*;
 import java.awt.geom.Point2D;
 
-
 public class Cell {
     public static final int SIZE = 100; // cell width/height (square)
     public static final int PADDING = SIZE / 10;
