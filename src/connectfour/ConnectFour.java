@@ -35,7 +35,7 @@ public class ConnectFour extends JPanel {
 
     /** Constructor to setup the UI and game components */
     public ConnectFour() {
-        selectGameMode();
+        initGame();
         super.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -67,14 +67,13 @@ public class ConnectFour extends JPanel {
         super.add(statusBar, BorderLayout.PAGE_END);
         super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
-
-        initGame();
-        newGame();
     }
 
     /** Initialize the game (run once) */
     public void initGame() {
         board = new Board();
+        selectGameMode();
+        newGame();
     }
 
     /** Select game mode through a dialog */
@@ -94,7 +93,6 @@ public class ConnectFour extends JPanel {
 
     /** Reset the game-board contents and the current-state, ready for new game */
     public void newGame() {
-        selectGameMode();
         for (int row = 0; row < Board.ROWS; ++row) {
             for (int col = 0; col < Board.COLS; ++col) {
                 board.cells[row][col].content = GamePiece.EMPTY;
@@ -102,16 +100,29 @@ public class ConnectFour extends JPanel {
         }
         currentPlayer = GamePiece.RED;
         currentState = GameState.PLAYING;
+
+        // If AI mode and AI goes first (Yellow), make AI move immediately
+        if (isAIMode && currentPlayer == GamePiece.YELLOW) {
+            Timer timer = new Timer(500, e -> {
+                int aiCol = AIPlayer.makeMove(board);
+                if (aiCol != -1) {
+                    handleMove(aiCol);
+                }
+            });
+            timer.setRepeats(false);
+            timer.start();
+        }
     }
 
     /** Handle player move and AI move if in AI mode */
     private void handleMove(int col) {
-        if (col >= 0 && col < Board.COLS) {
+        if (col >= 0 && col < Board.COLS && currentState == GameState.PLAYING) {
             // Look for an empty cell starting from the bottom row
             for (int row = Board.ROWS - 1; row >= 0; row--) {
                 if (board.cells[row][col].content == GamePiece.EMPTY) {
                     board.cells[row][col].content = currentPlayer;
                     currentState = board.stepGame(currentPlayer, row, col);
+                    repaint(); // Update the board immediately after move
 
                     if (currentState == GameState.PLAYING) {
                         currentPlayer = (currentPlayer == GamePiece.RED) ? GamePiece.YELLOW : GamePiece.RED;
@@ -122,7 +133,21 @@ public class ConnectFour extends JPanel {
                             Timer timer = new Timer(500, e -> {
                                 int aiCol = AIPlayer.makeMove(board);
                                 if (aiCol != -1) {
-                                    handleMove(aiCol);
+                                    // Find empty row for AI move
+                                    for (int aiRow = Board.ROWS - 1; aiRow >= 0; aiRow--) {
+                                        if (board.cells[aiRow][aiCol].content == GamePiece.EMPTY) {
+                                            // Make AI move
+                                            board.cells[aiRow][aiCol].content = GamePiece.YELLOW;
+                                            currentState = board.stepGame(GamePiece.YELLOW, aiRow, aiCol);
+
+                                            // Switch back to player's turn if game is still ongoing
+                                            if (currentState == GameState.PLAYING) {
+                                                currentPlayer = GamePiece.RED;
+                                            }
+                                            repaint();
+                                            break;
+                                        }
+                                    }
                                 }
                             });
                             timer.setRepeats(false);
