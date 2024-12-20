@@ -7,15 +7,6 @@
  * 2 - 5026231035 - Aldani Prasetyo
  * 3 - 5026231183 - Astrid Meilendra
  */
-/**
- * ES234317-Algorithm and Data Structures
- * Semester Ganjil, 2024/2025
- * Group Capstone Project
- * Group #12
- * 1 - 5026231082 - Naufal Zaky Nugraha
- * 2 - 5026231035 - Aldani Prasetyo
- * 3 - 5026231183 - Astrid Meilendra
- */
 
 package connectfour;
 
@@ -42,49 +33,69 @@ public class ConnectFour extends JPanel {
     private JLabel statusBar;
     private boolean isAIMode;  // true for PvAI, false for PvP
     private SoundManager soundManager;
+    private ScoreBoard scoreBoard;
+    private JPanel boardPanel;  // Panel to hold the game board
 
     /** Constructor to setup the UI and game components */
     public ConnectFour() {
         soundManager = SoundManager.getInstance();
-        initGame();
-        super.addMouseListener(new MouseAdapter() {
+        board = new Board();
+        scoreBoard = new ScoreBoard();
+
+        // Setup the status bar
+        statusBar = new JLabel();
+        statusBar.setFont(FONT_STATUS);
+        statusBar.setBackground(COLOR_BG_STATUS);
+        statusBar.setOpaque(true);
+        statusBar.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, 25));
+        statusBar.setHorizontalAlignment(JLabel.LEFT);
+        statusBar.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 12));
+
+        // Create board panel
+        boardPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                board.paint(g);
+            }
+        };
+        boardPanel.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT));
+        boardPanel.setBackground(COLOR_BG);
+        boardPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
-                // Get only the column clicked since pieces fall to bottom
                 int colSelected = mouseX / Cell.SIZE;
 
                 if (currentState == GameState.PLAYING) {
-                    // Only allow moves if it's player's turn
                     if (!isAIMode || currentPlayer == GamePiece.RED) {
                         handleMove(colSelected);
                     }
                 } else {
                     newGame();
                 }
-                repaint();
+                boardPanel.repaint();
             }
         });
 
-        statusBar = new JLabel();
-        statusBar.setFont(FONT_STATUS);
-        statusBar.setBackground(COLOR_BG_STATUS);
-        statusBar.setOpaque(true);
-        statusBar.setPreferredSize(new Dimension(300, 30));
-        statusBar.setHorizontalAlignment(JLabel.LEFT);
-        statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
+        // Setup the layout
+        setLayout(new BorderLayout(0, 0));
+        add(scoreBoard, BorderLayout.NORTH);
+        add(boardPanel, BorderLayout.CENTER);
+        add(statusBar, BorderLayout.SOUTH);
 
-        super.setLayout(new BorderLayout());
-        super.add(statusBar, BorderLayout.PAGE_END);
-        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
-        super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
+        // Set the total size to accommodate all components
+        int totalHeight = Board.CANVAS_HEIGHT + scoreBoard.getPreferredSize().height + statusBar.getPreferredSize().height;
+        setPreferredSize(new Dimension(Board.CANVAS_WIDTH, totalHeight));
+        setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 1, true));
+
+        // Initialize game state
+        selectGameMode();
+        newGame();
     }
 
     /** Initialize the game (run once) */
     public void initGame() {
-        board = new Board();
-        selectGameMode();
-        newGame();
         soundManager.startBackgroundMusic();
     }
 
@@ -113,18 +124,7 @@ public class ConnectFour extends JPanel {
         currentPlayer = GamePiece.RED;
         currentState = GameState.PLAYING;
         soundManager.startBackgroundMusic();
-
-        // If AI mode and AI goes first (Yellow), make AI move immediately
-        if (isAIMode && currentPlayer == GamePiece.YELLOW) {
-            Timer timer = new Timer(500, e -> {
-                int aiCol = AIPlayer.makeMove(board);
-                if (aiCol != -1) {
-                    handleMove(aiCol);
-                }
-            });
-            timer.setRepeats(false);
-            timer.start();
-        }
+        boardPanel.repaint();
     }
 
     /** Handle player move and AI move if in AI mode */
@@ -135,7 +135,7 @@ public class ConnectFour extends JPanel {
                 if (board.cells[row][col].content == GamePiece.EMPTY) {
                     board.cells[row][col].content = currentPlayer;
                     currentState = board.stepGame(currentPlayer, row, col);
-                    repaint(); // Update the board immediately after move
+                    boardPanel.repaint();
 
                     if (currentState == GameState.PLAYING) {
                         currentPlayer = (currentPlayer == GamePiece.RED) ? GamePiece.YELLOW : GamePiece.RED;
@@ -153,17 +153,16 @@ public class ConnectFour extends JPanel {
                                             board.cells[aiRow][aiCol].content = GamePiece.YELLOW;
                                             currentState = board.stepGame(GamePiece.YELLOW, aiRow, aiCol);
 
-                                            // Check if AI won
                                             if (currentState == GameState.YELLOW_WON) {
                                                 soundManager.stopBackgroundMusic();
                                                 soundManager.playAIWinSound();
+                                                scoreBoard.incrementYellowScore();
                                             }
 
-                                            // Switch back to player's turn if game is still ongoing
                                             if (currentState == GameState.PLAYING) {
                                                 currentPlayer = GamePiece.RED;
                                             }
-                                            repaint();
+                                            boardPanel.repaint();
                                             break;
                                         }
                                     }
@@ -172,26 +171,25 @@ public class ConnectFour extends JPanel {
                             timer.setRepeats(false);
                             timer.start();
                         }
-                    } else if (currentState == GameState.RED_WON) {
+                    } else {
                         soundManager.stopBackgroundMusic();
-                        soundManager.playWinSound();
-                    } else if (currentState == GameState.YELLOW_WON && !isAIMode) {
-                        soundManager.stopBackgroundMusic();
-                        soundManager.playWinSound();
+                        if (currentState == GameState.RED_WON) {
+                            soundManager.playWinSound();
+                            scoreBoard.incrementRedScore();
+                        } else if (currentState == GameState.YELLOW_WON && !isAIMode) {
+                            soundManager.playWinSound();
+                            scoreBoard.incrementYellowScore();
+                        }
                     }
+                    updateStatusBar();
                     break;
                 }
             }
         }
     }
 
-    /** Custom painting codes on this JPanel */
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        setBackground(COLOR_BG);
-        board.paint(g);
-
+    /** Update the status bar with the current game state */
+    private void updateStatusBar() {
         if (currentState == GameState.PLAYING) {
             statusBar.setForeground(Color.BLACK);
             statusBar.setText((currentPlayer == GamePiece.RED) ? "Red's Turn" : "Yellow's Turn");
@@ -209,22 +207,14 @@ public class ConnectFour extends JPanel {
 
     /** The entry "main" method */
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                JFrame frame = new JFrame(TITLE);
-                ConnectFour game = new ConnectFour();
-                frame.setContentPane(game);
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                frame.addWindowListener(new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent e) {
-                        game.soundManager.cleanup();
-                    }
-                });
-                frame.pack();
-                frame.setLocationRelativeTo(null);
-                frame.setVisible(true);
-            }
+        // Run GUI code in Event Dispatch Thread for thread safety
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame(TITLE);
+            frame.setContentPane(new ConnectFour());
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
         });
     }
 }
