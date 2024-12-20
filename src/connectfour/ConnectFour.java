@@ -1,9 +1,3 @@
-package connectfour;
-
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-
 /**
  * ES234317-Algorithm and Data Structures
  * Semester Ganjil, 2024/2025
@@ -13,6 +7,14 @@ import javax.swing.*;
  * 2 - 5026231035 - Aldani Prasetyo
  * 3 - 5026231183 - Astrid Meilendra
  */
+
+package connectfour;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.Timer;
+
 public class ConnectFour extends JPanel {
     private static final long serialVersionUID = 1L;
 
@@ -29,9 +31,11 @@ public class ConnectFour extends JPanel {
     private GameState currentState;
     private GamePiece currentPlayer;
     private JLabel statusBar;
+    private boolean isAIMode;  // true for PvAI, false for PvP
 
     /** Constructor to setup the UI and game components */
     public ConnectFour() {
+        selectGameMode();
         super.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -40,16 +44,9 @@ public class ConnectFour extends JPanel {
                 int colSelected = mouseX / Cell.SIZE;
 
                 if (currentState == GameState.PLAYING) {
-                    if (colSelected >= 0 && colSelected < Board.COLS) {
-                        // Look for an empty cell starting from the bottom row
-                        for (int row = Board.ROWS - 1; row >= 0; row--) {
-                            if (board.cells[row][colSelected].content == GamePiece.EMPTY) {
-                                board.cells[row][colSelected].content = currentPlayer;
-                                currentState = board.stepGame(currentPlayer, row, colSelected);
-                                currentPlayer = (currentPlayer == GamePiece.RED) ? GamePiece.YELLOW : GamePiece.RED;
-                                break;
-                            }
-                        }
+                    // Only allow moves if it's player's turn
+                    if (!isAIMode || currentPlayer == GamePiece.RED) {
+                        handleMove(colSelected);
                     }
                 } else {
                     newGame();
@@ -80,8 +77,24 @@ public class ConnectFour extends JPanel {
         board = new Board();
     }
 
+    /** Select game mode through a dialog */
+    private void selectGameMode() {
+        Object[] options = {"Player vs Player", "Player vs AI"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "Select Game Mode",
+                "Connect Four",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        isAIMode = (choice == 1);
+    }
+
     /** Reset the game-board contents and the current-state, ready for new game */
     public void newGame() {
+        selectGameMode();
         for (int row = 0; row < Board.ROWS; ++row) {
             for (int col = 0; col < Board.COLS; ++col) {
                 board.cells[row][col].content = GamePiece.EMPTY;
@@ -89,6 +102,37 @@ public class ConnectFour extends JPanel {
         }
         currentPlayer = GamePiece.RED;
         currentState = GameState.PLAYING;
+    }
+
+    /** Handle player move and AI move if in AI mode */
+    private void handleMove(int col) {
+        if (col >= 0 && col < Board.COLS) {
+            // Look for an empty cell starting from the bottom row
+            for (int row = Board.ROWS - 1; row >= 0; row--) {
+                if (board.cells[row][col].content == GamePiece.EMPTY) {
+                    board.cells[row][col].content = currentPlayer;
+                    currentState = board.stepGame(currentPlayer, row, col);
+
+                    if (currentState == GameState.PLAYING) {
+                        currentPlayer = (currentPlayer == GamePiece.RED) ? GamePiece.YELLOW : GamePiece.RED;
+
+                        // If it's AI's turn
+                        if (isAIMode && currentPlayer == GamePiece.YELLOW) {
+                            // Add small delay for better UX
+                            Timer timer = new Timer(500, e -> {
+                                int aiCol = AIPlayer.makeMove(board);
+                                if (aiCol != -1) {
+                                    handleMove(aiCol);
+                                }
+                            });
+                            timer.setRepeats(false);
+                            timer.start();
+                        }
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     /** Custom painting codes on this JPanel */

@@ -1,6 +1,3 @@
-package connectfour;
-import java.awt.*;
-
 /**
  * ES234317-Algorithm and Data Structures
  * Semester Ganjil, 2024/2025
@@ -10,11 +7,15 @@ import java.awt.*;
  * 2 - 5026231035 - Aldani Prasetyo
  * 3 - 5026231183 - Astrid Meilendra
  */
+
+package connectfour;
+import java.awt.*;
+
 public class Board {
     // Define named constants
     public static final int ROWS = 6;  // 6x7 grid for Connect Four
     public static final int COLS = 7;
-    
+
     // Define named constants for drawing
     public static final int CANVAS_WIDTH = Cell.SIZE * COLS;
     public static final int CANVAS_HEIGHT = Cell.SIZE * ROWS;
@@ -51,48 +52,8 @@ public class Board {
         cells[selectedRow][selectedCol].content = player;
 
         // Check for win conditions (4-in-a-line)
-        // Check horizontally
-        for (int col = 0; col <= COLS - 4; col++) {
-            if (cells[selectedRow][col].content == player &&
-                cells[selectedRow][col+1].content == player &&
-                cells[selectedRow][col+2].content == player &&
-                cells[selectedRow][col+3].content == player) {
-                return (player == GamePiece.RED) ? GameState.RED_WON : GameState.YELLOW_WON;
-            }
-        }
-
-        // Check vertically
-        for (int row = 0; row <= ROWS - 4; row++) {
-            if (cells[row][selectedCol].content == player &&
-                cells[row+1][selectedCol].content == player &&
-                cells[row+2][selectedCol].content == player &&
-                cells[row+3][selectedCol].content == player) {
-                return (player == GamePiece.RED) ? GameState.RED_WON : GameState.YELLOW_WON;
-            }
-        }
-
-        // Check diagonal (top-left to bottom-right)
-        for (int row = 0; row <= ROWS - 4; row++) {
-            for (int col = 0; col <= COLS - 4; col++) {
-                if (cells[row][col].content == player &&
-                    cells[row+1][col+1].content == player &&
-                    cells[row+2][col+2].content == player &&
-                    cells[row+3][col+3].content == player) {
-                    return (player == GamePiece.RED) ? GameState.RED_WON : GameState.YELLOW_WON;
-                }
-            }
-        }
-
-        // Check diagonal (top-right to bottom-left)
-        for (int row = 0; row <= ROWS - 4; row++) {
-            for (int col = 3; col < COLS; col++) {
-                if (cells[row][col].content == player &&
-                    cells[row+1][col-1].content == player &&
-                    cells[row+2][col-2].content == player &&
-                    cells[row+3][col-3].content == player) {
-                    return (player == GamePiece.RED) ? GameState.RED_WON : GameState.YELLOW_WON;
-                }
-            }
+        if (hasWon(player, selectedRow, selectedCol)) {
+            return (player == GamePiece.RED) ? GameState.RED_WON : GameState.YELLOW_WON;
         }
 
         // Check for draw
@@ -104,6 +65,63 @@ public class Board {
             }
         }
         return GameState.DRAW;
+    }
+
+    /** Check if the player has won after placing at (row, col) */
+    public boolean hasWon(GamePiece player, int row, int col) {
+        // Check horizontal
+        int count = 0;
+        for (int c = 0; c < COLS; c++) {
+            if (cells[row][c].content == player) {
+                count++;
+                if (count >= 4) return true;
+            } else {
+                count = 0;
+            }
+        }
+
+        // Check vertical
+        count = 0;
+        for (int r = 0; r < ROWS; r++) {
+            if (cells[r][col].content == player) {
+                count++;
+                if (count >= 4) return true;
+            } else {
+                count = 0;
+            }
+        }
+
+        // Check diagonal (top-left to bottom-right)
+        count = 0;
+        int startRow = row - Math.min(row, col);
+        int startCol = col - Math.min(row, col);
+        while (startRow < ROWS && startCol < COLS) {
+            if (cells[startRow][startCol].content == player) {
+                count++;
+                if (count >= 4) return true;
+            } else {
+                count = 0;
+            }
+            startRow++;
+            startCol++;
+        }
+
+        // Check diagonal (top-right to bottom-left)
+        count = 0;
+        startRow = row - Math.min(row, COLS - 1 - col);
+        startCol = col + Math.min(row, COLS - 1 - col);
+        while (startRow < ROWS && startCol >= 0) {
+            if (cells[startRow][startCol].content == player) {
+                count++;
+                if (count >= 4) return true;
+            } else {
+                count = 0;
+            }
+            startRow++;
+            startCol--;
+        }
+
+        return false;
     }
 
     public void paint(Graphics g) {
@@ -127,4 +145,5 @@ public class Board {
             }
         }
     }
+
 }
