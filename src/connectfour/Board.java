@@ -125,25 +125,43 @@ public class Board {
     }
 
     public void paint(Graphics g) {
-        // Draw the grid-lines
-        g.setColor(COLOR_GRID);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Create and draw gradient background
+        GradientPaint backgroundGradient = new GradientPaint(
+                0, 0, new Color(25, 118, 210),  // Dark blue
+                0, CANVAS_HEIGHT, new Color(13, 71, 161)  // Darker blue
+        );
+        g2d.setPaint(backgroundGradient);
+        g2d.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Draw the grid-lines with a modern look
+        g2d.setColor(new Color(255, 255, 255, 60));  // Semi-transparent white
+        g2d.setStroke(new BasicStroke(GRID_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        // Draw horizontal lines
         for (int row = 1; row < ROWS; ++row) {
-            g.fillRoundRect(0, Cell.SIZE * row - GRID_WIDTH_HALF,
-                    CANVAS_WIDTH - 1, GRID_WIDTH,
-                    GRID_WIDTH, GRID_WIDTH);
+            g2d.drawLine(GRID_WIDTH, Cell.SIZE * row,
+                    CANVAS_WIDTH - GRID_WIDTH, Cell.SIZE * row);
         }
+
+        // Draw vertical lines
         for (int col = 1; col < COLS; ++col) {
-            g.fillRoundRect(Cell.SIZE * col - GRID_WIDTH_HALF, 0 + Y_OFFSET,
-                    GRID_WIDTH, CANVAS_HEIGHT - 1,
-                    GRID_WIDTH, GRID_WIDTH);
+            g2d.drawLine(Cell.SIZE * col, GRID_WIDTH + Y_OFFSET,
+                    Cell.SIZE * col, CANVAS_HEIGHT - GRID_WIDTH);
         }
 
         // Draw all the cells
         for (int row = 0; row < ROWS; ++row) {
             for (int col = 0; col < COLS; ++col) {
-                cells[row][col].paint(g);
+                cells[row][col].paint(g2d);
             }
         }
-    }
 
+        // Add a subtle outer glow effect
+        g2d.setColor(new Color(255, 255, 255, 30));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(1, 1, CANVAS_WIDTH-2, CANVAS_HEIGHT-2);
+    }
 }

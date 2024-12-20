@@ -20,11 +20,11 @@ public class ConnectFour extends JPanel {
 
     // Define named constants for the drawing graphics
     public static final String TITLE = "Connect Four";
-    public static final Color COLOR_BG = Color.WHITE;
-    public static final Color COLOR_BG_STATUS = new Color(216, 216, 216);
-    public static final Color COLOR_PLAYER1 = Color.RED;  // Player 1 uses red discs
-    public static final Color COLOR_PLAYER2 = Color.YELLOW; // Player 2 uses yellow discs
-    public static final Font FONT_STATUS = new Font("OCR A Extended", Font.PLAIN, 14);
+    public static final Color COLOR_BG = new Color(18, 18, 18);  // Dark background
+    public static final Color COLOR_BG_STATUS = new Color(13, 71, 161);  // Dark blue status bar
+    public static final Color COLOR_PLAYER1 = new Color(244, 67, 54);  // Material Red
+    public static final Color COLOR_PLAYER2 = new Color(255, 193, 7);  // Material Amber
+    public static final Font FONT_STATUS = new Font("Segoe UI", Font.BOLD, 16);
 
     // Define game objects
     private Board board;
@@ -191,16 +191,16 @@ public class ConnectFour extends JPanel {
     /** Update the status bar with the current game state */
     private void updateStatusBar() {
         if (currentState == GameState.PLAYING) {
-            statusBar.setForeground(Color.BLACK);
+            statusBar.setForeground(Color.WHITE);
             statusBar.setText((currentPlayer == GamePiece.RED) ? "Red's Turn" : "Yellow's Turn");
         } else if (currentState == GameState.DRAW) {
-            statusBar.setForeground(Color.RED);
+            statusBar.setForeground(Color.WHITE);
             statusBar.setText("It's a Draw! Click to play again.");
         } else if (currentState == GameState.RED_WON) {
-            statusBar.setForeground(Color.RED);
+            statusBar.setForeground(Color.WHITE);
             statusBar.setText("Red Won! Click to play again.");
         } else if (currentState == GameState.YELLOW_WON) {
-            statusBar.setForeground(Color.RED);
+            statusBar.setForeground(Color.WHITE);
             statusBar.setText("Yellow Won! Click to play again.");
         }
     }
