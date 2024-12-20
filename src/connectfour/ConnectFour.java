@@ -7,6 +7,15 @@
  * 2 - 5026231035 - Aldani Prasetyo
  * 3 - 5026231183 - Astrid Meilendra
  */
+/**
+ * ES234317-Algorithm and Data Structures
+ * Semester Ganjil, 2024/2025
+ * Group Capstone Project
+ * Group #12
+ * 1 - 5026231082 - Naufal Zaky Nugraha
+ * 2 - 5026231035 - Aldani Prasetyo
+ * 3 - 5026231183 - Astrid Meilendra
+ */
 
 package connectfour;
 
@@ -32,9 +41,11 @@ public class ConnectFour extends JPanel {
     private GamePiece currentPlayer;
     private JLabel statusBar;
     private boolean isAIMode;  // true for PvAI, false for PvP
+    private SoundManager soundManager;
 
     /** Constructor to setup the UI and game components */
     public ConnectFour() {
+        soundManager = SoundManager.getInstance();
         initGame();
         super.addMouseListener(new MouseAdapter() {
             @Override
@@ -74,6 +85,7 @@ public class ConnectFour extends JPanel {
         board = new Board();
         selectGameMode();
         newGame();
+        soundManager.startBackgroundMusic();
     }
 
     /** Select game mode through a dialog */
@@ -100,6 +112,7 @@ public class ConnectFour extends JPanel {
         }
         currentPlayer = GamePiece.RED;
         currentState = GameState.PLAYING;
+        soundManager.startBackgroundMusic();
 
         // If AI mode and AI goes first (Yellow), make AI move immediately
         if (isAIMode && currentPlayer == GamePiece.YELLOW) {
@@ -140,6 +153,12 @@ public class ConnectFour extends JPanel {
                                             board.cells[aiRow][aiCol].content = GamePiece.YELLOW;
                                             currentState = board.stepGame(GamePiece.YELLOW, aiRow, aiCol);
 
+                                            // Check if AI won
+                                            if (currentState == GameState.YELLOW_WON) {
+                                                soundManager.stopBackgroundMusic();
+                                                soundManager.playAIWinSound();
+                                            }
+
                                             // Switch back to player's turn if game is still ongoing
                                             if (currentState == GameState.PLAYING) {
                                                 currentPlayer = GamePiece.RED;
@@ -153,6 +172,12 @@ public class ConnectFour extends JPanel {
                             timer.setRepeats(false);
                             timer.start();
                         }
+                    } else if (currentState == GameState.RED_WON) {
+                        soundManager.stopBackgroundMusic();
+                        soundManager.playWinSound();
+                    } else if (currentState == GameState.YELLOW_WON && !isAIMode) {
+                        soundManager.stopBackgroundMusic();
+                        soundManager.playWinSound();
                     }
                     break;
                 }
@@ -187,8 +212,15 @@ public class ConnectFour extends JPanel {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 JFrame frame = new JFrame(TITLE);
-                frame.setContentPane(new ConnectFour());
+                ConnectFour game = new ConnectFour();
+                frame.setContentPane(game);
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        game.soundManager.cleanup();
+                    }
+                });
                 frame.pack();
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
